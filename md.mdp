@@ -1,0 +1,77 @@
+; md.mdp — Production Molecular Dynamics Parameters
+; Duration   : 100 ns (50,000,000 steps × 2 fs timestep)
+; Ensemble   : NPT — 300 K, 1 bar (physiological conditions)
+; Force Field: CHARMM36-jul2022 | Water Model: TIP3P
+; Barostat   : Parrinello-Rahman (production-grade, replaces Berendsen)
+; Thermostat : V-rescale (canonical-ensemble correct)
+; Author     : Linta Mahboob | University of Siena
+; ─────────────────────────────────────────────────────────────────────────────
+
+; --- Run Control ─────────────────────────────────────────────────────────────
+integrator              = md
+dt                      = 0.002        ; 2 fs timestep
+nsteps                  = 50000000     ; 100 ns total simulation time
+comm-mode               = Linear
+nstcomm                 = 100
+
+; --- Output Control ──────────────────────────────────────────────────────────
+; Write every 10 ps for trajectory; every 5 ps for energies and log
+nstxout                 = 0            ; Full-precision coords — skip (use compressed)
+nstvout                 = 0            ; Velocities — skip for storage efficiency
+nstfout                 = 0            ; Forces — skip
+nstenergy               = 2500         ; Energy log every 5 ps
+nstlog                  = 2500         ; MD log every 5 ps
+nstxout-compressed      = 5000         ; Compressed trajectory (.xtc) every 10 ps
+compressed-x-precision  = 1000        ; Compression precision
+
+; --- Bonds ───────────────────────────────────────────────────────────────────
+continuation            = yes          ; Continue from NPT equilibration (no new velocities)
+constraint_algorithm    = lincs
+constraints             = h-bonds      ; All H-bonds constrained → enables 2 fs step
+lincs-iter              = 1
+lincs-order             = 4
+lincs-warnangle         = 30
+
+; --- Neighbour Searching ─────────────────────────────────────────────────────
+cutoff-scheme           = Verlet
+nstlist                 = 20           ; Update neighbour list every 40 fs
+ns_type                 = grid
+rlist                   = 1.2          ; Verlet buffer cutoff (nm)
+
+; --- Electrostatics ──────────────────────────────────────────────────────────
+coulombtype             = PME          ; Particle Mesh Ewald
+rcoulomb                = 1.2          ; Real-space cutoff (nm)
+pme_order               = 4
+fourierspacing          = 0.16         ; FFT grid spacing (nm)
+ewald-rtol              = 1e-5
+
+; --- Van der Waals ───────────────────────────────────────────────────────────
+vdwtype                 = Cut-off
+rvdw                    = 1.2          ; VdW cutoff (nm)
+rvdw-switch             = 1.0          ; Force-switch start (nm) — CHARMM36 standard
+vdw-modifier            = Force-switch ; Required for CHARMM36 consistency
+DispCorr                = EnerPres     ; Long-range dispersion correction
+
+; --- Temperature Coupling (V-rescale) ─────────────────────────────────────────
+tcoupl                  = V-rescale
+tc-grps                 = Protein_LIG Water_and_ions  ; Separate thermostat groups
+tau_t                   = 0.1       0.1
+ref_t                   = 300       300      ; 300 K (physiological)
+
+; --- Pressure Coupling (Parrinello-Rahman) ────────────────────────────────────
+; NOTE: Switch from Berendsen (equilibration) to Parrinello-Rahman (production)
+;       for correct NPT ensemble statistics
+pcoupl                  = Parrinello-Rahman
+pcoupltype              = isotropic
+tau_p                   = 2.0          ; Pressure coupling time constant (ps)
+ref_p                   = 1.0          ; 1 bar (≈ 1 atm physiological pressure)
+compressibility         = 4.5e-5       ; Isothermal compressibility of water (bar⁻¹)
+
+; --- Velocity Generation ─────────────────────────────────────────────────────
+gen_vel                 = no           ; Velocities read from NPT checkpoint
+
+; --- Periodic Boundary Conditions ────────────────────────────────────────────
+pbc                     = xyz          ; Full 3D periodic boundaries
+
+; --- Position Restraints ─────────────────────────────────────────────────────
+; No POSRES defined — unrestricted production simulation

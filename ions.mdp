@@ -1,0 +1,26 @@
+; ions.mdp — Minimal MDP for genion step (single-point energy call)
+; Used only to generate .tpr for gmx genion
+; Author: Linta Mahboob | University of Siena
+
+integrator              = steep
+nsteps                  = 0
+emtol                   = 1000.0
+emstep                  = 0.01
+
+; Neighbour searching
+cutoff-scheme           = Verlet
+nstlist                 = 10
+ns_type                 = grid
+rlist                   = 1.2
+
+; Electrostatics
+coulombtype             = PME
+rcoulomb                = 1.2
+
+; Van der Waals
+vdwtype                 = Cut-off
+rvdw                    = 1.2
+DispCorr                = EnerPres
+
+; Periodic boundary conditions
+pbc                     = xyz
